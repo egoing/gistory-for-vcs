@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { ObjectView } from './objectView';
 
 let myStatusBarItem:vscode.StatusBarItem;
 
@@ -15,6 +16,8 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(myStatusBarItem);
 	myStatusBarItem.text = 'Gitspector';
 	myStatusBarItem.show();
+
+	new ObjectView(context);
 }
 
 export function deactivate() {}
