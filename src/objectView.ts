@@ -1,21 +1,26 @@
 
+import { dir } from 'console';
 import * as vscode from 'vscode';
 type Node = { key: string };
 const { promisify } = require('util');
 const { resolve } = require('path');
-const fs = require('fs');
-const readdir = promisify(fs.readdir);
-const stat = promisify(fs.stat);
+const fs = require("fs");
+const path = require("path");
+ 
 
-async function getFiles(dir:string) {
-  const subdirs = await readdir(dir);
-  const files = await Promise.all(subdirs.map(async (subdir:string) => {
-    const res = resolve(dir, subdir);
-    return (await stat(res)).isDirectory() ? getFiles(res) : res;
-  }));
-  return files.reduce((a, f) => a.concat(f), []);
+const getAllFiles = function(dirPath:string, arrayOfFiles) {
+  let files = fs.readdirSync(dirPath);
+  arrayOfFiles = arrayOfFiles || [];
+  files.forEach(function(file) {
+    if (fs.statSync(dirPath + "/" + file).isDirectory()) {
+      arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles);
+    } else {
+      arrayOfFiles.push({key:path.join(__dirname, dirPath, "/", file)});
+    }
+  })
+  return arrayOfFiles;
 }
-console.log(2);
+
 export class ObjectView implements vscode.TreeDataProvider<Node>{
 	public tree = {
 		'a': {
@@ -37,15 +42,15 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 			'bb': {}
 		}
 	};
+	public files;
 	constructor(context:vscode.ExtensionContext){
         const view = vscode.window.createTreeView('objectView', {
 			treeDataProvider:this,
 			showCollapseAll:true, 
 			canSelectMany:true
 		});
-		context.subscriptions.push(view);
-        // getFiles(vscode.workspace.workspaceFolders[0].uri.path).then(files=>console.log('files', files)); 
-        
+		context.subscriptions.push(view);        
+		
 	}
 	getTreeItem(element: Node): vscode.TreeItem | Thenable<vscode.TreeItem> {
 		const treeItem = this._getTreeItem(element.key);
@@ -57,7 +62,7 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 		const tooltip = new vscode.MarkdownString(`$(zap) Tooltip for ${key}`, true);
 		return {
-			label: /**vscode.TreeItemLabel**/<any>{ label: key, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
+			label: /**vscode.TreeItemLabel**/<any>{ label: path.basename(key), highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
 			tooltip,
 			collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
 			resourceUri: vscode.Uri.parse(`/tmp/${key}`),
@@ -93,10 +98,18 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		}
 		return [];
 	}
-	getChildren(element?: Node): vscode.ProviderResult<Node[]> {
-		let childs = this._getChildren(element ? element.key : undefined);
-		let newChilds = childs.map(key => this._getNode(key));
-		return newChilds;
+	getChildren(element?: Node): vscode.ProviderResult<[]> {
+		if(element){
+
+		} else {
+			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.path,'.git'));
+			return Promise.resolve(files);
+		}
+	  
+		// let childs = this._getChildren(element ? element.key : undefined);
+		// let newChilds = childs.map(key => this._getNode(key));
+		// return newChilds;
+
 	}
 }
 class Key {
