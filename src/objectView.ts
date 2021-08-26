@@ -1,4 +1,3 @@
-
 import { dir } from 'console';
 import * as vscode from 'vscode';
 import {OPEN_COMMAND_ID} from './constant';
@@ -7,6 +6,7 @@ const { promisify } = require('util');
 const { resolve } = require('path');
 const fs = require("fs");
 const path = require("path");
+const moment = require('moment');
 
  
 
@@ -36,16 +36,23 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		
 	}
 	getTreeItem(element: Node): vscode.TreeItem | Thenable<vscode.TreeItem> {
-		const treeItem = this._getTreeItem(element.key);
+		const treeItem = this._getTreeItem(element);
 		treeItem.id = element.key;
 		return treeItem;
 	}
-	_getTreeItem(key: string): vscode.TreeItem {
+	_getTreeItem(element: string): vscode.TreeItem {
+		let key = element.key;
 		const treeElement = this._getTreeElement(key);
 		// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 		const tooltip = new vscode.MarkdownString(`$(zap) Tooltip for ${key}`, true);
+		let basename = path.basename(key);
+		let name = basename;
+		let pattern = key.match(/objects\/(..)\/(.{38})/)
+		if(pattern){
+			name = (pattern[1]+pattern[2]).substr(0,7)+'...';
+		}		
 		return {
-			label: /**vscode.TreeItemLabel**/<any>{ label: path.basename(key), highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
+			label: /**vscode.TreeItemLabel**/<any>{ label: name+" : "+element.ago, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
 			tooltip,
 			collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
 			resourceUri: vscode.Uri.parse(`/tmp/${key}`),
@@ -91,7 +98,18 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 
 		} else {
 			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.path,'.git'));
+			files.forEach((file)=>{
+				let stat = fs.statSync(file.key);
+				file.timeStamp = moment(stat.ctime).unix();
+				file.ago = moment(stat.ctime).fromNow();
+			});
+			console.log('before', files);
+			files.sort((e1, e2)=>{
+				return e2.timeStamp-e1.timeStamp;
+			});
+			console.log('after', files);
 			return Promise.resolve(files);
+			
 		}
 	  
 		// let childs = this._getChildren(element ? element.key : undefined);

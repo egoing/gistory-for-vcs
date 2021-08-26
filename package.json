@@ -58,6 +58,7 @@
     "webpack-cli": "^4.7.0"
   },
   "dependencies": {
-    "html-entities": "^2.3.2"
+    "html-entities": "^2.3.2",
+    "moment": "^2.29.1"
   }
 }
