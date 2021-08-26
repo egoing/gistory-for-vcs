@@ -17,6 +17,14 @@ function getRepoPath(fullPath:string){
 	return match[1];
 }
 
+function viewerContent(title, desc, path, body){
+	let content = `<h1>${title}</h1>`;
+	content += desc;		
+	content += `<p>${path}</p>`;
+	content += `<p><pre>${encode(body)}</pre></p>`;
+	return content;
+}
+
 export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand(OPEN_COMMAND_ID, (filePath) => {
 		let fileName = path.basename(filePath);
@@ -34,10 +42,11 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			let body, pattern, content;
 			if(fileName === 'config'){
-				body = `<h1>설정파일</h1>`;
-				body += `지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.`;		
-				body += `<p>${filePath}</p>`;
-				body += `<p><pre>${encode(data)}</pre></p>`;
+				body = viewerContent(
+					'설정파일', 
+					'지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.',
+					filePath, 
+					data);
 			} else if(pattern = filePath.match(/objects\/(..)\/(.{38})/)){
 				let objectName = pattern[1]+pattern[2];
 				const { execSync } = require("child_process");
