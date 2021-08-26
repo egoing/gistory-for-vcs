@@ -1,47 +1,30 @@
 
 import { dir } from 'console';
 import * as vscode from 'vscode';
+import {OPEN_COMMAND_ID} from './constant';
 type Node = { key: string };
 const { promisify } = require('util');
 const { resolve } = require('path');
 const fs = require("fs");
 const path = require("path");
+
  
 
 const getAllFiles = function(dirPath:string, arrayOfFiles) {
   let files = fs.readdirSync(dirPath);
   arrayOfFiles = arrayOfFiles || [];
   files.forEach(function(file) {
-    if (fs.statSync(dirPath + "/" + file).isDirectory()) {
-      arrayOfFiles = getAllFiles(dirPath + "/" + file, arrayOfFiles);
-    } else {
-      arrayOfFiles.push({key:path.join(__dirname, dirPath, "/", file)});
-    }
-  })
+	let filePath = path.join(dirPath,"/",file);
+	if (fs.statSync(filePath).isDirectory()) {
+		arrayOfFiles = getAllFiles(filePath, arrayOfFiles);
+	} else {
+		arrayOfFiles.push({key:filePath});
+	}
+  });
   return arrayOfFiles;
-}
+};
 
 export class ObjectView implements vscode.TreeDataProvider<Node>{
-	public tree = {
-		'a': {
-			'aa': {
-				'aaa': {
-					'aaaa': {
-						'aaaaa': {
-							'aaaaaa': {
-
-							}
-						}
-					}
-				}
-			},
-			'ab': {}
-		},
-		'c': {
-			'ba': {},
-			'bb': {}
-		}
-	};
 	public files;
 	constructor(context:vscode.ExtensionContext){
         const view = vscode.window.createTreeView('objectView', {
@@ -66,6 +49,11 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 			tooltip,
 			collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
 			resourceUri: vscode.Uri.parse(`/tmp/${key}`),
+			command: {
+				command:OPEN_COMMAND_ID,
+				title:'Open File',
+				arguments:[key]
+			}
 		};
 	}
 	private nodes = {};
@@ -103,6 +91,7 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 
 		} else {
 			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.path,'.git'));
+			console.log('files', files);
 			return Promise.resolve(files);
 		}
 	  
