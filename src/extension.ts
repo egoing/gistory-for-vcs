@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { ObjectView } from './objectView';
 import {OPEN_COMMAND_ID, OPEN_OBJECT_VIEWER_ID} from './constant';
 import { TextDecoder } from 'util';
+import {encode} from 'html-entities';
 const path = require('path');
 const fs = require('fs');
 
@@ -35,17 +36,21 @@ export function activate(context: vscode.ExtensionContext) {
 			if(fileName === 'config'){
 				body = `<h1>설정파일</h1>`;
 				body += `지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.`;		
-				body += `<p><pre>${data}</pre></p>`;
+				body += `<p>${filePath}</p>`;
+				body += `<p><pre>${encode(data)}</pre></p>`;
 			} else if(pattern = filePath.match(/objects\/(..)\/(.{38})/)){
 				let objectName = pattern[1]+pattern[2];
 				const { execSync } = require("child_process");
 				// exec(`git cat-file -p ${objectName}`, (error, stdout, stderr) => {
 				let gitPath = getRepoPath(filePath);
-				let result = execSync(`cd "${gitPath}";git cat-file -p ${objectName}`);
-				var output = new TextDecoder().decode(result);
-				body = `<h1>설정파일</h1>`;
+				let content = execSync(`cd "${gitPath}";git cat-file -p ${objectName}`);
+				content = new TextDecoder().decode(content);
+				let contentType = execSync(`cd "${gitPath}";git cat-file -t ${objectName}`);
+				body = `<h1>Object : ${contentType}</h1>`;
 				body += `지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.`;	
-				body += `<p><pre>${output}</pre></p>`;
+				body += `<p>${filePath}</p>`;
+				body += `<p><pre>${encode(content)}</pre></p>`;
+				panel.title = objectName.substr(0, 7);
 			}
 			panel.webview.html = `
 				<!doctype html>
