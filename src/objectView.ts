@@ -91,7 +91,6 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 
 		} else {
 			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.path,'.git'));
-			console.log('files', files);
 			return Promise.resolve(files);
 		}
 	  
