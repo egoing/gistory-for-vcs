@@ -48,7 +48,7 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		const tooltip = new vscode.MarkdownString(`$(zap) Tooltip for ${key}`, true);
 		let basename = path.basename(key);
 		let name = basename;
-		let pattern = key.match(/objects\/(..)\/(.{38})/)
+		let pattern = key.match(/objects[\/\\](..)[\/\\](.{38})/)
 		if(pattern){
 			name = (pattern[1]+pattern[2]).substr(0,7)+'...';
 		}
@@ -62,7 +62,8 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 				title:'Open File',
 				arguments:[key]
 			}
-		};		
+		};	
+
 		if(element.type){
 			treeItemObject.iconPath = {
 				light: path.join(__filename, '..', '..', 'resources', 'light', element.type+'.svg'),
@@ -105,13 +106,13 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		if(element){
 
 		} else {
-			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.path,'.git'));
+			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.fsPath,'.git'));
 			files.forEach((file)=>{
 				let stat = fs.statSync(file.key);
 				file.timeStamp = moment(stat.ctime).unix();
 				file.ago = moment(stat.ctime).fromNow();
 				let type = git.getType(file.key);
-				file.type = (type+'' === 'undefined' ? undefined : type+'')?.trim();
+				file.type = (type+'' === 'undefined' || type+'' === 'null' ? undefined : type+'')?.trim();
 			});
 			files.sort((e1, e2)=>{
 				return e2.timeStamp-e1.timeStamp;
