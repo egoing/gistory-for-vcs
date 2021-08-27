@@ -1,6 +1,7 @@
 import { dir } from 'console';
 import * as vscode from 'vscode';
 import {OPEN_COMMAND_ID} from './constant';
+import {git} from './git';
 type Node = { key: string };
 const { promisify } = require('util');
 const { resolve } = require('path');
@@ -50,9 +51,9 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		let pattern = key.match(/objects\/(..)\/(.{38})/)
 		if(pattern){
 			name = (pattern[1]+pattern[2]).substr(0,7)+'...';
-		}		
-		return {
-			label: /**vscode.TreeItemLabel**/<any>{ label: name+" : "+element.ago, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
+		}
+		let treeItemObject = {
+			label: /**vscode.TreeItemLabel**/<any>{ label: name+" : "+element.ago+" : "+element.type, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
 			tooltip,
 			collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
 			resourceUri: vscode.Uri.parse(`/tmp/${key}`),
@@ -61,7 +62,14 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 				title:'Open File',
 				arguments:[key]
 			}
-		};
+		};		
+		if(element.type){
+			treeItemObject.iconPath = {
+				light: path.join(__filename, '..', '..', 'resources', 'light', element.type+'.svg'),
+				dark: path.join(__filename, '..', '..', 'resources', 'dark', element.type+'.svg')
+			};
+		}
+		return treeItemObject;
 	}
 	private nodes = {};
 	_getTreeElement(element: string, tree?: any): Node {
@@ -102,12 +110,12 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 				let stat = fs.statSync(file.key);
 				file.timeStamp = moment(stat.ctime).unix();
 				file.ago = moment(stat.ctime).fromNow();
+				let type = git.getType(file.key);
+				file.type = (type+'' === 'undefined' ? undefined : type+'')?.trim();
 			});
-			console.log('before', files);
 			files.sort((e1, e2)=>{
 				return e2.timeStamp-e1.timeStamp;
-			});
-			console.log('after', files);
+			});			
 			return Promise.resolve(files);
 			
 		}
