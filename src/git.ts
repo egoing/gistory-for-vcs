@@ -27,6 +27,8 @@ export const git = {
 		let pattern;
 		if(match[2]==='HEAD'){
 			return 'HEAD';
+		} else if(match[2]==='index'){
+			return 'index';
 		} else if(pattern = fullPath.match(/objects[\/\\](..)[\/\\](.{38})/)){
 			let objectName = pattern[1]+pattern[2];
 			let gitPath = git.getRootPath(fullPath);

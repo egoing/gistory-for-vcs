@@ -4,6 +4,7 @@ import {OPEN_COMMAND_ID, OPEN_OBJECT_VIEWER_ID} from './constant';
 import { TextDecoder } from 'util';
 import {encode} from 'html-entities';
 import {git} from './git';
+const { execSync } = require("child_process");
 const path = require('path');
 const fs = require('fs');
 
@@ -42,16 +43,24 @@ export function activate(context: vscode.ExtensionContext) {
 					'지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.',
 					filePath, 
 					data);
-			} else if(['commit', 'tree', 'blob'].includes(fileType)){
+			} else if(fileType === 'index'){
+				const { execSync } = require("child_process");
+				let data = execSync('git ls-files --stage', {cwd:git.getRootPath(filePath)})
+				body = viewerContent(
+					'stage, index, cached', 
+					`
+					<p>커밋하고자 하는 스냅샷을 의미합니다. 아래 내용은 git ls-files --stage를 통해서 만들어진 결과입니다. </p>
+					`,
+					filePath, 
+					data);
+			}else if(['commit', 'tree', 'blob'].includes(fileType)){
 				pattern = filePath.match(/objects[\/\\](..)[\/\\](.{38})/);
 				let objectName = pattern[1]+pattern[2];
-				const { execSync } = require("child_process");
 				// exec(`git cat-file -p ${objectName}`, (error, stdout, stderr) => {
-				let gitPath = git.getRootPath(filePath);
-				let content = execSync(`git cat-file -p ${objectName}`, {cwd:gitPath});
+				let content = execSync(`git cat-file -p ${objectName}`, {cwd:git.getRootPath(filePath)});
 				content = new TextDecoder().decode(content);
 				body = `<h1>Object : ${fileType}</h1>`;
-				body += `지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.`;	
+				body += `컨텐츠의 내용을 담고 있습니다.`;	
 				body += `<p>${filePath}</p>`;
 				body += `<p><pre>${encode(content)}</pre></p>`;
 				panel.title = objectName.substr(0, 7);
