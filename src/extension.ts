@@ -35,21 +35,22 @@ export function activate(context: vscode.ExtensionContext) {
 				return console.log(err);
 			}
 			let body, pattern, content;
-			if(fileName === 'config'){
+			let fileType = git.getType(filePath);
+			if(fileType === 'config'){
 				body = viewerContent(
 					'설정파일', 
 					'지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.',
 					filePath, 
 					data);
-			} else if(pattern = filePath.match(/objects\/(..)\/(.{38})/)){
+			} else if(['commit', 'tree', 'blob'].includes(fileType)){
+				pattern = filePath.match(/objects[\/\\](..)[\/\\](.{38})/);
 				let objectName = pattern[1]+pattern[2];
 				const { execSync } = require("child_process");
 				// exec(`git cat-file -p ${objectName}`, (error, stdout, stderr) => {
 				let gitPath = git.getRootPath(filePath);
-				let content = execSync(`cd "${gitPath}";git cat-file -p ${objectName}`);
+				let content = execSync(`git cat-file -p ${objectName}`, {cwd:gitPath});
 				content = new TextDecoder().decode(content);
-				let contentType = execSync(`cd "${gitPath}";git cat-file -t ${objectName}`);
-				body = `<h1>Object : ${contentType}</h1>`;
+				body = `<h1>Object : ${fileType}</h1>`;
 				body += `지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.`;	
 				body += `<p>${filePath}</p>`;
 				body += `<p><pre>${encode(content)}</pre></p>`;

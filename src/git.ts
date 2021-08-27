@@ -32,7 +32,7 @@ export const git = {
 			let gitPath = git.getRootPath(fullPath);
 			console.log(`cd "${gitPath}";git cat-file -t ${objectName}`)
 			let contentType = execSync(`git cat-file -t ${objectName}`, {cwd:gitPath});
-			return contentType;
+			return (contentType+'').trim();
 		}
 		
 	}
