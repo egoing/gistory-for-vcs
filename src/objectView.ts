@@ -53,7 +53,7 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		const tooltip = new vscode.MarkdownString(`$(zap) Tooltip for ${key}`, true);
 		let name = git.getPathFromRepo(key);
 		let treeItemObject = {
-			label: /**vscode.TreeItemLabel**/<any>{ label: name+" : "+element.ago+" : "+element.type, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
+			label: /**vscode.TreeItemLabel**/<any>{ label: `${element.ago}s : ${name}`, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
 			tooltip,
 			collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
 			resourceUri: vscode.Uri.parse(`/tmp/${key}`),
@@ -110,7 +110,8 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 			files.forEach((file)=>{
 				let stat = fs.statSync(file.key);
 				file.timeStamp = moment(stat.ctime).unix();
-				file.ago = moment(stat.ctime).fromNow();
+				// file.ago = moment(stat.ctime).fromNow();
+				file.ago = moment().unix()-moment(stat.ctime).unix();
 				let type = git.getType(file.key);
 				file.type = (type+'' === 'undefined' || type+'' === 'null' ? undefined : type+'')?.trim();
 			});
