@@ -25,10 +25,26 @@ export const git = {
 			return null;
 		}
 		let pattern;
-		if(match[2]==='HEAD'){
+		const beforePath = match[1];
+		const afterPath = match[2];		
+		if(afterPath==='HEAD'){
 			return 'HEAD';
-		} else if(match[2]==='index'){
-			return 'index';
+		} else if(afterPath==='index'){
+			return 'INDEX';
+		} else if(afterPath==='config'){
+			return 'CONFIG';
+		} else if(afterPath==='COMMIT_EDITMSG'){
+			return 'COMMIT_EDITMSG';
+		} else if(afterPath.match(/^hooks[\/\\](.+)/)){
+			return 'HOOK';
+		} else if(afterPath.match(/^info[\/\\]exclude/)){
+			return 'EXCLUDE';
+		} else if(afterPath.match(/^refs[\/\\]heads[\/\\](.+)/)){
+			return 'BRANCH';
+		} else if(afterPath.match(/^logs[\/\\]HEAD$/)){
+			return 'LOG_REFS_HEADS';
+		} else if(afterPath.match(/^logs[\/\\]refs[\/\\]heads[\/\\](.+)/)){
+			return 'LOG_REFS_BRANCH_HEADS';
 		} else if(pattern = fullPath.match(/objects[\/\\](..)[\/\\](.{38})/)){
 			let objectName = pattern[1]+pattern[2];
 			let gitPath = git.getRootPath(fullPath);

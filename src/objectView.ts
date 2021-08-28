@@ -51,12 +51,7 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		const treeElement = this._getTreeElement(key);
 		// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 		const tooltip = new vscode.MarkdownString(`$(zap) Tooltip for ${key}`, true);
-		let basename = path.basename(key);
-		let name = basename;
-		let pattern = key.match(/objects[\/\\](..)[\/\\](.{38})/)
-		if(pattern){
-			name = (pattern[1]+pattern[2]).substr(0,7)+'...';
-		}
+		let name = git.getPathFromRepo(key);
 		let treeItemObject = {
 			label: /**vscode.TreeItemLabel**/<any>{ label: name+" : "+element.ago+" : "+element.type, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
 			tooltip,
