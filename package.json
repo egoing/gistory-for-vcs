@@ -11,7 +11,7 @@
   ],
   "activationEvents": [
     "onCommand:gitspector.show",
-    "onView:objectView"
+    "onView:gitspector.objectViewer"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -19,12 +19,29 @@
       {
         "command": "gitspector.show",
         "title": "Gitspector show"
+      },
+      {
+        "command": "gitspector.objectViewer.refresh",
+        "title": "Gitspector refresh",
+        "icon": {
+					"light": "resources/light/refresh.svg",
+					"dark": "resources/dark/refresh.svg"
+				}
       }
     ],
+    "menus":{
+      "view/title": [
+        {
+          "command": "gitspector.objectViewer.refresh",
+          "when": "view == gitspector.objectViewer",
+          "group":"navigation"
+        }
+      ]
+    },    
     "views": {
       "scm": [
         {
-          "id": "objectView",
+          "id": "gitspector.objectViewer",
           "name": "Gitspector"
         }
       ]

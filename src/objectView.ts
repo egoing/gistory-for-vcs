@@ -28,13 +28,18 @@ const getAllFiles = function(dirPath:string, arrayOfFiles) {
 export class ObjectView implements vscode.TreeDataProvider<Node>{
 	public files;
 	constructor(context:vscode.ExtensionContext){
-        const view = vscode.window.createTreeView('objectView', {
+        const view = vscode.window.createTreeView('gitspector.objectViewer', {
 			treeDataProvider:this,
 			showCollapseAll:true, 
 			canSelectMany:true
 		});
 		context.subscriptions.push(view);        
-		
+		vscode.commands.registerCommand('gitspector.objectViewer.refresh', () => this.refresh());
+	}
+	private _onDidChangeTreeData: vscode.EventEmitter<undefined | void> = new vscode.EventEmitter<undefined | void>();
+	readonly onDidChangeTreeData: vscode.Event<undefined | void> = this._onDidChangeTreeData.event;
+	refresh(): void {
+		this._onDidChangeTreeData.fire();
 	}
 	getTreeItem(element: Node): vscode.TreeItem | Thenable<vscode.TreeItem> {
 		const treeItem = this._getTreeItem(element);

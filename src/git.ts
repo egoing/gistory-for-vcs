@@ -32,7 +32,6 @@ export const git = {
 		} else if(pattern = fullPath.match(/objects[\/\\](..)[\/\\](.{38})/)){
 			let objectName = pattern[1]+pattern[2];
 			let gitPath = git.getRootPath(fullPath);
-			console.log(`cd "${gitPath}";git cat-file -t ${objectName}`)
 			let contentType = execSync(`git cat-file -t ${objectName}`, {cwd:gitPath});
 			return (contentType+'').trim();
 		}
