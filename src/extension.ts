@@ -165,23 +165,54 @@ export function activate(context: vscode.ExtensionContext) {
 					`,
 					filePath, 
 					data);
-			} else if(['commit', 'tree', 'blob'].includes(fileType)){
+			} else if(fileType === 'commit'){
 				pattern = filePath.match(/objects[\/\\](..)[\/\\](.{38})/);
 				let objectName = pattern[1]+pattern[2];
 				let content = execSync(`git cat-file -p ${objectName}`, {cwd:git.getRootPath(filePath)});
 				content = new TextDecoder().decode(content);
 				body = viewerBody(
-					`<h1>Object : ${fileType}</h1>`, 
+					`<h1>Commit</h1>`, 
 					`
-					<p>
-					컨텐츠의 내용을 담고 있습니다.
-					</p>
-					<p>
-						
-					</p>
+					<p>커밋 내용을 담고 있는 파일입니다. </p>
+					<u>
+						<li>parent는 부모 커밋을 가리킵니다. </li>
+						<li>tree는 커밋이 이루어진 시점의 파일이름과 내용을 담고 있는 파일을 가리킵니다.</li>
+					</u>
 					`,
 					filePath, 
 					content);
+			}  else if(fileType === 'tree'){
+				pattern = filePath.match(/objects[\/\\](..)[\/\\](.{38})/);
+				let objectName = pattern[1]+pattern[2];
+				let content = execSync(`git cat-file -p ${objectName}`, {cwd:git.getRootPath(filePath)});
+				content = new TextDecoder().decode(content);
+				body = viewerBody(
+					`<h1>Tree</h1>`, 
+					`
+					<p>파일의 이름과 내용의 짝을 담고 있는 파일입니다.</p>
+					`,
+					filePath, 
+					content);
+			} else if(fileType === 'blob'){
+				pattern = filePath.match(/objects[\/\\](..)[\/\\](.{38})/);
+				let objectName = pattern[1]+pattern[2];
+				let content = execSync(`git cat-file -p ${objectName}`, {cwd:git.getRootPath(filePath)});
+				content = new TextDecoder().decode(content);
+				body = viewerBody(
+					`<h1>Blob</h1>`, 
+					`
+					<p>실제 내용을 담고 있는 파일입니다. </p>
+					`,
+					filePath, 
+					content);
+			} else if(fileType === 'PACK_FILE'){
+				body = viewerBody(
+					`<h1>Pack file</h1>`, 
+					`
+					<p>용량이 큰 저장소의 경우 압축을 하는데, 이 파일은 압축된 파일입니다. 그래서 gistory에서는 읽을 수 없습니다.</p>
+					`,
+					filePath, 
+					'');
 			} else {
 				body = viewerBody(
 					'알려지지 않은 파일입니다', 

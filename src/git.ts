@@ -55,6 +55,8 @@ export const git = {
 				contentType = 'UNKNOWN';
 			}
 			return (contentType+'').trim();
+		} else if(fullPath.match(/objects[\/\\]pack[\/\\](.+)/)){
+			return "PACK_FILE";
 		}
 		return 'UNKNOWN';
 	}
