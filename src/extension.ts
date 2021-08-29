@@ -16,11 +16,6 @@ function viewerHTML(body:string):string{
 	<!doctype html>
 	<html>
 		<body>
-			
-			<input type="button" value="message" onclick="debugger;vscode.postMessage({
-				command: 'LINK_OBJECT',
-				text: 12345678
-			})">
 			<div id="content">${body}</div>
 			<script>
 				let vscode = acquireVsCodeApi();	
