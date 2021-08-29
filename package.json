@@ -2,7 +2,7 @@
   "name": "gistory",
   "displayName": "gistory",
   "description": "깃의 내부 구조를 분석하는 도구입니다.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "engines": {
     "vscode": "^1.59.0"
   },
