@@ -11,8 +11,37 @@ const fs = require('fs');
 let myStatusBarItem:vscode.StatusBarItem;
 
 
-
-function viewerContent(title, desc, path, body){
+function viewerHTML(body:string):string{
+	return `
+	<!doctype html>
+	<html>
+		<body>
+			
+			<input type="button" value="message" onclick="debugger;vscode.postMessage({
+				command: 'LINK_OBJECT',
+				text: 12345678
+			})">
+			<div id="content">${body}</div>
+			<script>
+				let vscode = acquireVsCodeApi();	
+				let original = document.querySelector('#content').innerHTML;
+				let replaced = original.replace(/\\b([0-9a-fA-F]{40})\\b/gmi, ' <a href="#" id="hash">$1</a> ');
+				document.querySelector('#content').innerHTML = replaced;
+				document.querySelectorAll('a[id="hash"]').forEach(e=>{
+					console.log(e);
+					e.addEventListener("click", (ev)=>{						
+						vscode.postMessage({
+							command:'OPEN_OBJECT_BY_HASH',
+							text:ev.target.innerText
+						})
+					});
+				})
+			</script>
+		</body>
+	</html>
+	`;
+}
+function viewerBody(title:string, desc:string, path:string, body:string){
 	let content = `<h1>${title}</h1>`;
 	content += desc;		
 	content += `<p>${path}</p>`;
@@ -31,6 +60,21 @@ export function activate(context: vscode.ExtensionContext) {
 				enableScripts:true
 			}
 		);
+		panel.webview.onDidReceiveMessage(
+			message => {
+				switch (message.command) {
+				case 'OPEN_OBJECT_BY_HASH':
+					let root = git.getRootPath(filePath);
+					let objectPath = path.join(root, '.git', 'objects', message.text.substr(0,2), message.text.substr(2,38));
+					console.log('objectPath', objectPath);
+					vscode.commands.executeCommand(OPEN_COMMAND_ID, objectPath);
+					return;
+				}
+			},
+			undefined,
+			context.subscriptions
+		);
+	
 		let render = (err,data)=>{
 			if (err) {
 				return console.log(err);
@@ -38,14 +82,14 @@ export function activate(context: vscode.ExtensionContext) {
 			let body, pattern, content;
 			let fileType = git.getType(filePath);
 			if(fileType === 'config'){
-				body = viewerContent(
+				body = viewerBody(
 					'설정파일', 
 					'지역 저장소에 대한 설정 정보를 담고 있는 파일입니다.',
 					filePath, 
 					data);
 			} else if(fileType === 'INDEX'){
-				let data = execSync('git ls-files --stage', {cwd:git.getRootPath(filePath)})
-				body = viewerContent(
+				let data = execSync('git ls-files --stage', {cwd:git.getRootPath(filePath)});
+				body = viewerBody(
 					'stage, index, cached', 
 					`
 					<p>커밋하고자 하는 스냅샷을 의미합니다. 아래 내용은 git ls-files --stage를 통해서 만들어진 결과입니다. </p>
@@ -54,7 +98,7 @@ export function activate(context: vscode.ExtensionContext) {
 					data);
 			} else if(fileType === 'HEAD'){
 				let data = execSync('git ls-files --stage', {cwd:git.getRootPath(filePath)})
-				body = viewerContent(
+				body = viewerBody(
 					'stage, index, cached', 
 					`
 					<p>커밋하고자 하는 스냅샷을 의미합니다. 아래 내용은 git ls-files --stage를 통해서 만들어진 결과입니다. </p>
@@ -62,7 +106,7 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'COMMIT_EDITMSG'){
-				body = viewerContent(
+				body = viewerBody(
 					'COMMIT_EDITMSG', 
 					`
 					<p>마지막으로 커밋한 메시지를 담고 있는 파일입니다.</p>
@@ -70,7 +114,7 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'BRANCH'){
-				body = viewerContent(
+				body = viewerBody(
 					'브랜치', 
 					`
 					<p>브랜치의 마지막 버전을 기록해둔 파일</p>
@@ -78,7 +122,7 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'LOG_REFS_HEADS'){
-				body = viewerContent(
+				body = viewerBody(
 					'HEAD log', 
 					`
 					<p>헤드가 변경된 역사를 기록한 파일, git reflog에서 주로 사용됩니다.</p>
@@ -86,7 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'CONFIG'){
-				body = viewerContent(
+				body = viewerBody(
 					'Config', 
 					`
 					<p>저장소의 설정이 저장되는 파일입니다.</p>
@@ -94,7 +138,7 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'LOG_REFS_BRANCH_HEADS'){
-				body = viewerContent(
+				body = viewerBody(
 					'Branch log', 
 					`
 					<p>브랜치가 변경된 역사를 기록한 파일, git reflog에서 주로 사용됩니다.</p>
@@ -102,7 +146,7 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'HOOK'){
-				body = viewerContent(
+				body = viewerBody(
 					'Hook', 
 					`
 					<p>어떤 사건이 일어났을 때 처리해야 할 일을 프로그래밍 할 수 있는 스크립트들이 위치합니다. 예를들어서 커밋하기 전에 코드의 내용을 점검해서 문제가 있다면 커밋을 못하게 하고 싶다면 hook/pre-commit 파일을 만들어서 처리하면 됩니다. 
@@ -114,7 +158,7 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'EXCLUDE'){
-				body = viewerContent(
+				body = viewerBody(
 					'Exclude file', 
 					`
 					<p>
@@ -129,16 +173,22 @@ export function activate(context: vscode.ExtensionContext) {
 			} else if(['commit', 'tree', 'blob'].includes(fileType)){
 				pattern = filePath.match(/objects[\/\\](..)[\/\\](.{38})/);
 				let objectName = pattern[1]+pattern[2];
-				// exec(`git cat-file -p ${objectName}`, (error, stdout, stderr) => {
 				let content = execSync(`git cat-file -p ${objectName}`, {cwd:git.getRootPath(filePath)});
 				content = new TextDecoder().decode(content);
-				body = `<h1>Object : ${fileType}</h1>`;
-				body += `컨텐츠의 내용을 담고 있습니다.`;	
-				body += `<p>${filePath}</p>`;
-				body += `<p><pre>${encode(content)}</pre></p>`;
-				panel.title = objectName.substr(0, 7);
+				body = viewerBody(
+					`<h1>Object : ${fileType}</h1>`, 
+					`
+					<p>
+					컨텐츠의 내용을 담고 있습니다.
+					</p>
+					<p>
+						
+					</p>
+					`,
+					filePath, 
+					content);
 			} else {
-				body = viewerContent(
+				body = viewerBody(
 					'알려지지 않은 파일입니다', 
 					`
 					<p></p>
@@ -146,16 +196,13 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			}
-			panel.webview.html = `
-				<!doctype html>
-				<html>
-					<head>
-					</head>
-					<body>
-						${body}						
-					</body>
-				</html>
-			`;
+			panel.webview.html = viewerHTML(body);
+			panel.webview.onDidReceiveMessage(message=>{
+				switch(message.command){
+					case 'LINK_OBJECT':
+						vscode.window.showErrorMessage(message.text);
+				}
+			})
 		}
 		fs.readFile(filePath, 'utf8', render);
 		
