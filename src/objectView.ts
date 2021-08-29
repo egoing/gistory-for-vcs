@@ -2,29 +2,42 @@ import { dir } from 'console';
 import * as vscode from 'vscode';
 import {OPEN_COMMAND_ID} from './constant';
 import {git} from './git';
-type Node = { key: string };
+type Node = { 
+	key: string,
+	ago: string,
+	type: string
+};
+type FileType = {
+	key: string,
+	timeStamp:string|undefined,
+	ago:number|undefined,
+	type:string|undefined
+};
 const { promisify } = require('util');
 const { resolve } = require('path');
 const fs = require("fs");
 const path = require("path");
 const moment = require('moment');
 
-const getAllFiles = function(dirPath:string, arrayOfFiles) {
+const getAllFiles = function(dirPath:string, arrayOfFiles:Array<FileType>|undefined=[]):Array<FileType> {
   let files = fs.readdirSync(dirPath);
   arrayOfFiles = arrayOfFiles || [];
-  files.forEach(function(file) {
+  files.forEach(function(file:string) {
 	let filePath = path.join(dirPath,"/",file);
 	if (fs.statSync(filePath).isDirectory()) {
 		arrayOfFiles = getAllFiles(filePath, arrayOfFiles);
 	} else {
-		arrayOfFiles.push({key:filePath});
+		arrayOfFiles.push({
+			key:filePath,
+			timeStamp:undefined,
+			ago:undefined,
+			type:undefined
+		});
 	}
   });
   return arrayOfFiles;
 };
-
 export class ObjectView implements vscode.TreeDataProvider<Node>{
-	public files;
 	constructor(context:vscode.ExtensionContext){
         const view = vscode.window.createTreeView('gistory.objectViewer', {
 			treeDataProvider:this,
@@ -44,13 +57,13 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		treeItem.id = element.key;
 		return treeItem;
 	}
-	_getTreeItem(element: string): vscode.TreeItem {
+	_getTreeItem(element: Node): vscode.TreeItem {
 		let key = element.key;
 		const treeElement = this._getTreeElement(key);
 		// An example of how to use codicons in a MarkdownString in a tree item tooltip.
 		const tooltip = new vscode.MarkdownString(`$(zap) Tooltip for ${key}`, true);
 		let name = git.getPathFromRepo(key);
-		let treeItemObject = {
+		let treeItemObject:vscode.TreeItem = {
 			label: /**vscode.TreeItemLabel**/<any>{ label: `${element.ago}s : ${name}`, highlights: key.length > 1 ? [[key.length - 2, key.length - 1]] : void 0 },
 			tooltip,
 			collapsibleState: treeElement && Object.keys(treeElement).length ? vscode.TreeItemCollapsibleState.Collapsed : vscode.TreeItemCollapsibleState.None,
@@ -70,40 +83,33 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		}
 		return treeItemObject;
 	}
-	private nodes = {};
-	_getTreeElement(element: string, tree?: any): Node {
-		const currentNode = tree ?? this.tree;
-		for (const prop in currentNode) {
+	_getTreeElement(element: string, tree?: any): Node|undefined {
+		for (const prop in tree) {
 			if (prop === element) {
-				return currentNode[prop];
+				return tree[prop];
 			} else {
-				const treeElement = this._getTreeElement(element, currentNode[prop]);
+				const treeElement = this._getTreeElement(element, tree[prop]);
 				if (treeElement) {
 					return treeElement;
 				}
 			}
 		}
-	}
-	_getNode(key: string): Node {
-		if (!this.nodes[key]) {
-			this.nodes[key] = new Key(key);
-		}
-		return this.nodes[key];
+		return undefined;
 	}
 	_getChildren(key: string): string[] {
-		if (!key) {
-			return Object.keys(this.tree);
-		}
 		const treeElement = this._getTreeElement(key);
 		if (treeElement) {
 			return Object.keys(treeElement);
 		}
 		return [];
 	}
-	getChildren(element?: Node): vscode.ProviderResult<[]> {
+	getChildren(element?: Node): any {
 		if(element){
-
+			
 		} else {
+			if(!vscode.workspace.workspaceFolders){
+				return;
+			}
 			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.fsPath,'.git'));
 			files.forEach((file)=>{
 				let stat = fs.statSync(file.key);
@@ -114,7 +120,7 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 				file.type = (type+'' === 'undefined' || type+'' === 'null' ? undefined : type+'')?.trim();
 			});
 			files.sort((e1, e2)=>{
-				return e2.timeStamp-e1.timeStamp;
+				return Number(e2.timeStamp)-Number(e1.timeStamp);
 			});			
 			return Promise.resolve(files);
 			

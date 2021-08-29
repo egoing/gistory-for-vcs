@@ -70,12 +70,12 @@ export function activate(context: vscode.ExtensionContext) {
 			context.subscriptions
 		);
 	
-		let render = (err,data)=>{
+		let render = (err:any,data:string)=>{
 			if (err) {
 				return console.log(err);
 			}
 			let body, pattern, content;
-			let fileType = git.getType(filePath);
+			let fileType:string = git.getType(filePath);
 			if(fileType === 'config'){
 				body = viewerBody(
 					'설정파일', 
@@ -92,7 +92,7 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'HEAD'){
-				let data = execSync('git ls-files --stage', {cwd:git.getRootPath(filePath)})
+				let data = execSync('git ls-files --stage', {cwd:git.getRootPath(filePath)});
 				body = viewerBody(
 					'stage, index, cached', 
 					`
@@ -197,8 +197,8 @@ export function activate(context: vscode.ExtensionContext) {
 					case 'LINK_OBJECT':
 						vscode.window.showErrorMessage(message.text);
 				}
-			})
-		}
+			});
+		};
 		fs.readFile(filePath, 'utf8', render);
 		
 	});

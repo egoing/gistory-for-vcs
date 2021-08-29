@@ -3,7 +3,7 @@ import { TextDecoder } from "util";
 import { delimiter } from "path";
 
 export const git = {
-	getRootPath:(fullPath:string)=>{
+	getRootPath:(fullPath:string):string|null=>{
 		let match = fullPath.match(/(.*)\.git/);
 		if(!match){
 			return null;
@@ -19,10 +19,10 @@ export const git = {
 		
 		return match[2];
 	},
-	getType:(fullPath:string)=>{
+	getType:(fullPath:string):string=>{
 		let match = fullPath.match(/(.*)\.git[\/\\](.*)/);
 		if(!match){
-			return null;
+			return 'UNKNOWN';
 		}
 		let pattern;
 		const beforePath = match[1];
@@ -48,9 +48,14 @@ export const git = {
 		} else if(pattern = fullPath.match(/objects[\/\\](..)[\/\\](.{38})/)){
 			let objectName = pattern[1]+pattern[2];
 			let gitPath = git.getRootPath(fullPath);
-			let contentType = execSync(`git cat-file -t ${objectName}`, {cwd:gitPath});
+			let contentType;
+			if(gitPath){
+				contentType = execSync(`git cat-file -t ${objectName}`, {cwd:gitPath});
+			} else {
+				contentType = 'UNKNOWN';
+			}
 			return (contentType+'').trim();
 		}
-		
+		return 'UNKNOWN';
 	}
 };
