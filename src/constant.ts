@@ -1,2 +1,2 @@
-export const OPEN_COMMAND_ID = 'gitspector.show';
-export const OPEN_OBJECT_VIEWER_ID = 'gitspector.object_viewer';
+export const OPEN_COMMAND_ID = 'gistory.show';
+export const OPEN_OBJECT_VIEWER_ID = 'gistory.object_viewer';

@@ -1,7 +1,7 @@
 {
-  "name": "gitspector",
-  "displayName": "gitspector",
-  "description": "",
+  "name": "gistory",
+  "displayName": "gistory",
+  "description": "깃의 내부 구조를 분석하는 도구입니다.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.59.0"
@@ -10,39 +10,39 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:gitspector.show",
-    "onView:gitspector.objectViewer"
+    "onCommand:gistory.show",
+    "onView:gistory.objectViewer"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "gitspector.show",
-        "title": "Gitspector show"
+        "command": "gistory.show",
+        "title": "gistory show"
       },
       {
-        "command": "gitspector.objectViewer.refresh",
-        "title": "Gitspector refresh",
+        "command": "gistory.objectViewer.refresh",
+        "title": "gistory refresh",
         "icon": {
-					"light": "resources/light/refresh.svg",
-					"dark": "resources/dark/refresh.svg"
-				}
+          "light": "resources/light/refresh.svg",
+          "dark": "resources/dark/refresh.svg"
+        }
       }
     ],
-    "menus":{
+    "menus": {
       "view/title": [
         {
-          "command": "gitspector.objectViewer.refresh",
-          "when": "view == gitspector.objectViewer",
-          "group":"navigation"
+          "command": "gistory.objectViewer.refresh",
+          "when": "view == gistory.objectViewer",
+          "group": "navigation"
         }
       ]
-    },    
+    },
     "views": {
       "scm": [
         {
-          "id": "gitspector.objectViewer",
-          "name": "Gitspector"
+          "id": "gistory.objectViewer",
+          "name": "gistory"
         }
       ]
     }

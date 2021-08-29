@@ -9,8 +9,6 @@ const fs = require("fs");
 const path = require("path");
 const moment = require('moment');
 
- 
-
 const getAllFiles = function(dirPath:string, arrayOfFiles) {
   let files = fs.readdirSync(dirPath);
   arrayOfFiles = arrayOfFiles || [];
@@ -28,13 +26,13 @@ const getAllFiles = function(dirPath:string, arrayOfFiles) {
 export class ObjectView implements vscode.TreeDataProvider<Node>{
 	public files;
 	constructor(context:vscode.ExtensionContext){
-        const view = vscode.window.createTreeView('gitspector.objectViewer', {
+        const view = vscode.window.createTreeView('gistory.objectViewer', {
 			treeDataProvider:this,
 			showCollapseAll:true, 
 			canSelectMany:true
 		});
 		context.subscriptions.push(view);        
-		vscode.commands.registerCommand('gitspector.objectViewer.refresh', () => this.refresh());
+		vscode.commands.registerCommand('gistory.objectViewer.refresh', () => this.refresh());
 	}
 	private _onDidChangeTreeData: vscode.EventEmitter<undefined | void> = new vscode.EventEmitter<undefined | void>();
 	readonly onDidChangeTreeData: vscode.Event<undefined | void> = this._onDidChangeTreeData.event;
