@@ -40,6 +40,7 @@ function viewerBody(title:string, desc:string, path:string, body:string){
 	let content = `<h1>${title}</h1>`;
 	content += desc;		
 	content += `<p>${path}</p>`;
+	content += '<hr>';
 	content += `<p><pre>${encode(body)}</pre></p>`;
 	return content;
 }
@@ -92,11 +93,10 @@ export function activate(context: vscode.ExtensionContext) {
 					filePath, 
 					data);
 			} else if(fileType === 'HEAD'){
-				let data = execSync('git ls-files --stage', {cwd:git.getRootPath(filePath)});
 				body = viewerBody(
-					'stage, index, cached', 
+					'HEAD', 
 					`
-					<p>커밋하고자 하는 스냅샷을 의미합니다. 아래 내용은 git ls-files --stage를 통해서 만들어진 결과입니다. </p>
+					<p>현재 working dir과 stage area가 어떤 버전이 만들어진 시점의 stage area에서 유래했는지를 알려줍니다. </p>
 					`,
 					filePath, 
 					data);
