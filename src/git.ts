@@ -45,7 +45,7 @@ export const git = {
 			return 'LOG_REFS_HEADS';
 		} else if(afterPath.match(/^logs[\/\\]refs[\/\\]heads[\/\\](.+)/)){
 			return 'LOG_REFS_BRANCH_HEADS';
-		} else if(pattern = fullPath.match(/objects[\/\\](..)[\/\\](.{38})/)){
+		} else if(pattern = fullPath.match(/\.git[\/\\]objects[\/\\](..)[\/\\](.{38})/)){
 			let objectName = pattern[1]+pattern[2];
 			let gitPath = git.getRootPath(fullPath);
 			let contentType;
