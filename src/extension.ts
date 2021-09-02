@@ -235,11 +235,6 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(disposable);
 
-	myStatusBarItem = vscode.window.createStatusBarItem();
-	myStatusBarItem.command = OPEN_COMMAND_ID;
-	context.subscriptions.push(myStatusBarItem);
-	myStatusBarItem.text = 'gistory';
-	myStatusBarItem.show();
 
 	new ObjectView(context);
 }
