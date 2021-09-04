@@ -2,7 +2,7 @@
   "name": "gistory",
   "displayName": "gistory",
   "description": "깃의 내부 구조를 분석하는 도구입니다.",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.59.0"
   },
@@ -14,6 +14,10 @@
     "onCommand:gistory.show",
     "onView:gistory.objectViewer"
   ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/egoing/gistory-for-vcs.git"
+  },
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
