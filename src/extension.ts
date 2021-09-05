@@ -126,9 +126,17 @@ export function activate(context: vscode.ExtensionContext) {
 					data);
 			} else if(fileType === 'BRANCH'){
 				body = viewerBody(
-					'브랜치', 
+					'Branch', 
 					`
 					<p>브랜치의 마지막 버전을 기록해둔 파일</p>
+					`,
+					filePath, 
+					data);
+			} else if(fileType === 'TAG'){
+				body = viewerBody(
+					'Tag', 
+					`
+					<p>기념하고 싶은 버전에 이름을 붙인 것. 브랜치와 비슷합니다만, 브랜치는 움직이지만 태그는 움직이지 않습니다.</p>
 					`,
 					filePath, 
 					data);

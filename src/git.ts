@@ -41,6 +41,8 @@ export const git = {
 			return 'EXCLUDE';
 		} else if(afterPath.match(/^refs[\/\\]heads[\/\\](.+)/)){
 			return 'BRANCH';
+		} else if(afterPath.match(/^refs[\/\\]tags[\/\\](.+)/)){
+			return 'TAG';
 		} else if(afterPath.match(/^logs[\/\\]HEAD$/)){
 			return 'LOG_REFS_HEADS';
 		} else if(afterPath.match(/^logs[\/\\]refs[\/\\]heads[\/\\](.+)/)){
