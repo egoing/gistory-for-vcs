@@ -18,19 +18,25 @@ function viewerHTML(body:string):string{
 		<body>
 			<div id="content">${body}</div>
 			<script>
-				let vscode = acquireVsCodeApi();	
-				let original = document.querySelector('#content').innerHTML;
-				let replaced = original.replace(/\\b([0-9a-fA-F]{40})\\b/gmi, ' <a href="#" id="hash">$1</a> ');
-				document.querySelector('#content').innerHTML = replaced;
-				document.querySelectorAll('a[id="hash"]').forEach(e=>{
-					console.log(e);
-					e.addEventListener("click", (ev)=>{						
-						vscode.postMessage({
-							command:'OPEN_OBJECT_BY_HASH',
-							text:ev.target.innerText
-						})
-					});
-				})
+function makeLinkFromHash(_original){
+	return _original.replace(/\\b([0-9a-fA-F]{40})\\b/gmi, ' <a href="#" class="GISTORY_LINK" id="OPEN_OBJECT_BY_HASH">$1</a>');
+}
+function makeLinkFromRefs(original){
+	return original.replace(/ref: (.+)$/gmi, 'ref: <a href="#" class="GISTORY_LINK" id="OPEN_REF">$1</a>');
+}
+let vscode = acquireVsCodeApi();	
+let original = document.querySelector('#content').innerHTML;
+let replaced = makeLinkFromRefs(original);
+replaced = makeLinkFromHash(replaced);
+document.querySelector('#content').innerHTML = replaced;
+document.querySelectorAll('.GISTORY_LINK').forEach(e=>{
+	e.addEventListener("click", (ev)=>{	
+		vscode.postMessage({
+			command:ev.target.id,
+			text:ev.target.innerText
+		})
+	});
+})
 			</script>
 		</body>
 	</html>
@@ -58,14 +64,19 @@ export function activate(context: vscode.ExtensionContext) {
 		);
 		panel.webview.onDidReceiveMessage(
 			message => {
+				let root = git.getRootPath(filePath);
 				switch (message.command) {
-				case 'OPEN_OBJECT_BY_HASH':
-					let root = git.getRootPath(filePath);
-					let objectPath = path.join(root, '.git', 'objects', message.text.substr(0,2), message.text.substr(2,38));
-					console.log('objectPath', objectPath);
-					vscode.commands.executeCommand(OPEN_COMMAND_ID, objectPath);
-					return;
+					case 'OPEN_OBJECT_BY_HASH':			
+						let objectPath = path.join(root, '.git', 'objects', message.text.substr(0,2), message.text.substr(2,38));
+						vscode.commands.executeCommand(OPEN_COMMAND_ID, objectPath);
+						break;
+					case 'OPEN_REF':						
+						let newPath = path.join.apply(null, 'refs/heads/master'.split('/'));
+						newPath = path.join(root, '.git', newPath);
+						vscode.commands.executeCommand(OPEN_COMMAND_ID, newPath);
+						break;
 				}
+
 			},
 			undefined,
 			context.subscriptions
@@ -73,7 +84,12 @@ export function activate(context: vscode.ExtensionContext) {
 	
 		let render = (err:any,data:string)=>{
 			if (err) {
-				return console.log(err);
+				return panel.webview.html = viewerHTML(viewerBody(
+					'파일을 찾을 수 없습니다', 
+					'아직 존재하지 않거나, 잘못된 경로의 파일에 접근하려고 시도한 것일 수 있습니다. ',
+					filePath, 
+					'Null'
+				));
 			}
 			let body, pattern, content;
 			let fileType:string = git.getType(filePath);
@@ -223,12 +239,6 @@ export function activate(context: vscode.ExtensionContext) {
 					data);
 			}
 			panel.webview.html = viewerHTML(body);
-			panel.webview.onDidReceiveMessage(message=>{
-				switch(message.command){
-					case 'LINK_OBJECT':
-						vscode.window.showErrorMessage(message.text);
-				}
-			});
 		};
 		fs.readFile(filePath, 'utf8', render);
 		
