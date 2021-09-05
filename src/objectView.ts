@@ -81,8 +81,8 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 
 		if(element.type){
 			treeItemObject.iconPath = {
-				light: path.join(__filename, '..', '..', 'resources', 'light', element.type+'.svg'),
-				dark: path.join(__filename, '..', '..', 'resources', 'dark', element.type+'.svg')
+				light: path.join(__filename, '..', '..', 'resources', 'light', element.type.toLocaleLowerCase()+'.svg'),
+				dark: path.join(__filename, '..', '..', 'resources', 'dark', element.type.toLocaleLowerCase()+'.svg')
 			};
 		}
 		return treeItemObject;
