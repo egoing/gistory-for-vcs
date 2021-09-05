@@ -13,6 +13,9 @@ type FileType = {
 	ago:number|undefined,
 	type:string|undefined
 };
+type MemoizationType = {
+	[index: string]:FileType
+};
 const { promisify } = require('util');
 const { resolve } = require('path');
 const fs = require("fs");
@@ -47,6 +50,7 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 		context.subscriptions.push(view);        
 		vscode.commands.registerCommand('gistory.objectViewer.refresh', () => this.refresh());
 	}
+	private memoization:MemoizationType = {};
 	private _onDidChangeTreeData: vscode.EventEmitter<undefined | void> = new vscode.EventEmitter<undefined | void>();
 	readonly onDidChangeTreeData: vscode.Event<undefined | void> = this._onDidChangeTreeData.event;
 	refresh(): void {
@@ -111,13 +115,18 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 				return;
 			}
 			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.fsPath,'.git'));
-			files.forEach((file)=>{
+			files = files.map((file)=>{				
+				if(this.memoization[file.key]){
+					return this.memoization[file.key];
+				}
 				let stat = fs.statSync(file.key);
 				file.timeStamp = moment(stat.ctime).unix();
 				// file.ago = moment(stat.ctime).fromNow();
 				file.ago = moment().unix()-moment(stat.ctime).unix();
 				let type = git.getType(file.key);
 				file.type = (type+'' === 'undefined' || type+'' === 'null' ? undefined : type+'')?.trim();
+				this.memoization[file.key] = file;
+				return file;
 			});
 			files.sort((e1, e2)=>{
 				return Number(e2.timeStamp)-Number(e1.timeStamp);
