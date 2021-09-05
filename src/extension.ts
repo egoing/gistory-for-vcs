@@ -30,7 +30,8 @@ let replaced = makeLinkFromRefs(original);
 replaced = makeLinkFromHash(replaced);
 document.querySelector('#content').innerHTML = replaced;
 document.querySelectorAll('.GISTORY_LINK').forEach(e=>{
-	e.addEventListener("click", (ev)=>{	
+	e.addEventListener("click", (ev)=>{
+		ev.preventDefault();	
 		vscode.postMessage({
 			command:ev.target.id,
 			text:ev.target.innerText
@@ -45,7 +46,7 @@ document.querySelectorAll('.GISTORY_LINK').forEach(e=>{
 function viewerBody(title:string, desc:string, path:string, body:string){
 	let content = `<h1>${title}</h1>`;
 	content += desc;		
-	content += `<p>${path}</p>`;
+	content += `<p><a href="${path}" class="GISTORY_LINK" id="OPEN_PATH">${path}</a></p>`;
 	content += '<hr>';
 	content += `<p><pre>${encode(body)}</pre></p>`;
 	return content;
@@ -74,6 +75,18 @@ export function activate(context: vscode.ExtensionContext) {
 						let newPath = path.join.apply(null, 'refs/heads/master'.split('/'));
 						newPath = path.join(root, '.git', newPath);
 						vscode.commands.executeCommand(OPEN_COMMAND_ID, newPath);
+						break;
+					case 'OPEN_PATH':
+						try{
+							vscode.workspace.openTextDocument(filePath).then(
+								doc=>{
+									vscode.window.showTextDocument(doc);
+								}
+							);	
+						}catch(e){
+							console.log('e', e);
+						}
+						
 						break;
 				}
 
@@ -239,7 +252,7 @@ export function activate(context: vscode.ExtensionContext) {
 					'');
 			} else {
 				body = viewerBody(
-					'알려지지 않은 파일입니다', 
+					'아직 지원되지 않는 파일입니다.', 
 					`
 					<p></p>
 					`,
