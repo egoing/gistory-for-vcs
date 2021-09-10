@@ -14,7 +14,7 @@ type FileType = {
 	type:string|undefined
 };
 type MemoizationType = {
-	[index: string]:FileType
+	[index: string]:string|undefined
 };
 const { promisify } = require('util');
 const { resolve } = require('path');
@@ -116,16 +116,17 @@ export class ObjectView implements vscode.TreeDataProvider<Node>{
 			}
 			let files = getAllFiles(path.join(vscode.workspace.workspaceFolders[0].uri.fsPath,'.git'));
 			files = files.map((file)=>{				
-				if(this.memoization[file.key]){
-					return this.memoization[file.key];
-				}
 				let stat = fs.statSync(file.key);
 				file.timeStamp = moment(stat.ctime).unix();
 				// file.ago = moment(stat.ctime).fromNow();
 				file.ago = moment().unix()-moment(stat.ctime).unix();
-				let type = git.getType(file.key);
-				file.type = (type+'' === 'undefined' || type+'' === 'null' ? undefined : type+'')?.trim();
-				this.memoization[file.key] = file;
+				if(!this.memoization[file.key]){
+					let type = git.getType(file.key);
+					file.type = (type+'' === 'undefined' || type+'' === 'null' ? undefined : type+'')?.trim();
+					this.memoization[file.key] = file.type;						
+				} else {
+					file.type = this.memoization[file.key];
+				}
 				return file;
 			});
 			files.sort((e1, e2)=>{
