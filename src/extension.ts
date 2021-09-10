@@ -202,6 +202,46 @@ export function activate(context: vscode.ExtensionContext) {
 					`,
 					filePath, 
 					data);
+			} else if(fileType === 'MERGE_HEAD'){
+				body = viewerBody(
+					'MERGE_HEAD', 
+					`
+					<p>
+					병합된 버전 아이디를 기록한 파일입니다. 
+					</p>
+					`,
+					filePath, 
+					data);
+			} else if(fileType === 'MERGE_MSG'){
+				body = viewerBody(
+					'MERGE_MSG', 
+					`
+					<p>
+					병합 작업에서 사용할 커밋 메시지를 담고 있는 파일입니다. 
+					</p>
+					`,
+					filePath, 
+					data);
+			} else if(fileType === 'ORIG_HEAD'){
+				body = viewerBody(
+					'ORIG_HEAD', 
+					`
+					<p>
+					병합한 버전 아이디를 기록한 파일입니다. git reset --hard ORIG_HEAD를 통해서 병합작업을 취소할 수 있습니다. 
+					</p>
+					`,
+					filePath, 
+					data);
+			} else if(fileType === 'REBASE_HEAD'){
+				body = viewerBody(
+					'REBASE_HEAD', 
+					`
+					<p>
+					현재 리베이스를 진행 중인 버전을 기록합니다. 
+					</p>
+					`,
+					filePath, 
+					data);
 			} else if(fileType === 'commit'){
 				pattern = filePath.match(/objects[\/\\](..)[\/\\](.{38})/);
 				let objectName = pattern[1]+pattern[2];

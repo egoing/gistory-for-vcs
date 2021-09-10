@@ -35,6 +35,16 @@ export const git = {
 			return 'CONFIG';
 		} else if(afterPath==='COMMIT_EDITMSG'){
 			return 'COMMIT_EDITMSG';
+		} else if(afterPath==='MERGE_HEAD'){
+			return 'MERGE_HEAD';
+		} else if(afterPath==='MERGE_MODE'){
+			return 'MERGE_MODE';
+		} else if(afterPath==='MERGE_MSG'){
+			return 'MERGE_MSG';
+		} else if(afterPath==='ORIG_HEAD'){
+			return 'ORIG_HEAD';
+		} else if(afterPath==='REBASE_HEAD'){
+			return 'REBASE_HEAD';
 		} else if(afterPath.match(/^hooks[\/\\](.+)/)){
 			return 'HOOK';
 		} else if(afterPath.match(/^info[\/\\]exclude/)){
