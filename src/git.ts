@@ -1,75 +1,71 @@
-import { execSync } from "child_process";
-import { TextDecoder } from "util";
-import { delimiter } from "path";
+import { execFileSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+
+function runGit(args: string[], cwd: string): string | undefined {
+	try {
+		return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+	} catch (_error) {
+		return undefined;
+	}
+}
+
+function findGitDir(inputPath: string): { root: string; gitDir: string } | undefined {
+	let current = path.resolve(inputPath);
+	try {
+		if (!fs.statSync(current).isDirectory()) current = path.dirname(current);
+	} catch (_error) {
+		current = path.dirname(current);
+	}
+	while (true) {
+		const gitMarker = path.join(current, '.git');
+		try {
+			const stat = fs.statSync(gitMarker);
+			if (stat.isDirectory()) return { root: current, gitDir: gitMarker };
+			if (stat.isFile()) {
+				const match = fs.readFileSync(gitMarker, 'utf8').match(/^gitdir:\s*(.+)\s*$/m);
+				if (match) return { root: current, gitDir: path.resolve(current, match[1]) };
+			}
+		} catch (_error) { /* Continue toward the filesystem root. */ }
+		const parent = path.dirname(current);
+		if (parent === current) return undefined;
+		current = parent;
+	}
+}
 
 export const git = {
-	getRootPath:(fullPath:string):string|null=>{
-		let match = fullPath.match(/(.*)\.git/);
-		if(!match){
-			return null;
-		}
-		
-		return match[1];
+	getRootPath(fullPath: string): string | null {
+		const repo = findGitDir(fullPath);
+		return repo?.root ?? null;
 	},
-	getPathFromRepo:(fullPath:string)=>{
-		let match = fullPath.match(/(.*)\.git[\/\\](.*)/);
-		if(!match){
-			return null;
-		}
-		
-		return match[2];
+	getGitDir(fullPath: string): string | null {
+		const repo = findGitDir(fullPath);
+		return repo?.gitDir ?? null;
 	},
-	getType:(fullPath:string):string=>{
-		let match = fullPath.match(/(.*)\.git[\/\\](.*)/);
-		if(!match){
-			return 'UNKNOWN';
-		}
-		let pattern;
-		const beforePath = match[1];
-		const afterPath = match[2];		
-		if(afterPath==='HEAD'){
-			return 'HEAD';
-		} else if(afterPath==='index'){
-			return 'INDEX';
-		} else if(afterPath==='config'){
-			return 'CONFIG';
-		} else if(afterPath==='COMMIT_EDITMSG'){
-			return 'COMMIT_EDITMSG';
-		} else if(afterPath==='MERGE_HEAD'){
-			return 'MERGE_HEAD';
-		} else if(afterPath==='MERGE_MODE'){
-			return 'MERGE_MODE';
-		} else if(afterPath==='MERGE_MSG'){
-			return 'MERGE_MSG';
-		} else if(afterPath==='ORIG_HEAD'){
-			return 'ORIG_HEAD';
-		} else if(afterPath==='REBASE_HEAD'){
-			return 'REBASE_HEAD';
-		} else if(afterPath.match(/^hooks[\/\\](.+)/)){
-			return 'HOOK';
-		} else if(afterPath.match(/^info[\/\\]exclude/)){
-			return 'EXCLUDE';
-		} else if(afterPath.match(/^refs[\/\\]heads[\/\\](.+)/)){
-			return 'BRANCH';
-		} else if(afterPath.match(/^refs[\/\\]tags[\/\\](.+)/)){
-			return 'TAG';
-		} else if(afterPath.match(/^logs[\/\\]HEAD$/)){
-			return 'LOG_REFS_HEADS';
-		} else if(afterPath.match(/^logs[\/\\]refs[\/\\]heads[\/\\](.+)/)){
-			return 'LOG_REFS_BRANCH_HEADS';
-		} else if(pattern = fullPath.match(/\.git[\/\\]objects[\/\\](..)[\/\\](.{38})/)){
-			let objectName = pattern[1]+pattern[2];
-			let gitPath = git.getRootPath(fullPath);
-			let contentType;
-			if(gitPath){
-				contentType = execSync(`git cat-file -t ${objectName}`, {cwd:gitPath});
-			} else {
-				contentType = 'UNKNOWN';
-			}
-			return (contentType+'').trim();
-		} else if(fullPath.match(/objects[\/\\]pack[\/\\](.+)/)){
-			return "PACK_FILE";
-		}
+	getPathFromRepo(fullPath: string): string | null {
+		const repo = findGitDir(fullPath);
+		if (!repo) return null;
+		const relative = path.relative(repo.gitDir, path.resolve(fullPath));
+		return relative === '' ? '.' : relative;
+	},
+	getType(fullPath: string): string {
+		const repo = findGitDir(fullPath);
+		if (!repo) return 'UNKNOWN';
+		const relative = path.relative(repo.gitDir, path.resolve(fullPath)).split(path.sep).join('/');
+		if (relative === 'HEAD') return 'HEAD';
+		if (relative === 'index') return 'INDEX';
+		if (relative === 'config') return 'CONFIG';
+		if (relative === 'COMMIT_EDITMSG') return 'COMMIT_EDITMSG';
+		if (['MERGE_HEAD', 'MERGE_MODE', 'MERGE_MSG', 'ORIG_HEAD', 'REBASE_HEAD'].includes(relative)) return relative;
+		if (/^hooks\/.+/.test(relative)) return 'HOOK';
+		if (relative === 'info/exclude') return 'EXCLUDE';
+		if (/^refs\/heads\/.+/.test(relative)) return 'BRANCH';
+		if (/^refs\/tags\/.+/.test(relative)) return 'TAG';
+		if (relative === 'logs/HEAD') return 'LOG_REFS_HEADS';
+		if (/^logs\/refs\/heads\/.+/.test(relative)) return 'LOG_REFS_BRANCH_HEADS';
+		const objectMatch = relative.match(/^objects\/([0-9a-f]{2})\/([0-9a-f]{38})$/i);
+		if (objectMatch) return runGit(['cat-file', '-t', objectMatch[1] + objectMatch[2]], repo.root) || 'UNKNOWN';
+		if (/^objects\/pack\/.+/.test(relative)) return 'PACK_FILE';
 		return 'UNKNOWN';
 	}
 };
