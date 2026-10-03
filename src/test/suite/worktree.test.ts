@@ -3,8 +3,11 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { execFileSync } from 'child_process';
+import * as vm from 'vm';
 import * as vscode from 'vscode';
 import { git } from '../../git';
+import { linkedContent, readTarget, viewerHTML } from '../../extension';
+import { workspaceGitRoots } from '../../objectView';
 
 suite('Worktree regression', () => {
 	let directory: string;
@@ -34,5 +37,51 @@ suite('Worktree regression', () => {
 	});
 	test('command without path focuses object view', async () => {
 		await vscode.commands.executeCommand('gistory.show');
+	});
+	test('packed object and ref open through Git', async () => {
+		const hash = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
+		execFileSync('git', ['tag', 'v1'], { cwd: root });
+		execFileSync('git', ['gc', '--aggressive', '--prune=now'], { cwd: root });
+		assert.ok(!fs.existsSync(path.join(root, '.git', 'refs', 'tags', 'v1')));
+		assert.ok(!fs.existsSync(path.join(root, '.git', 'objects', hash.slice(0, 2), hash.slice(2))));
+		const object = await readTarget({ repoRoot: root, kind: 'object', value: hash });
+		assert.strictEqual(object.type, 'commit');
+		assert.ok(object.content.includes('tree '));
+		const worktreeObject = await readTarget({ repoRoot: worktree, kind: 'object', value: hash });
+		assert.strictEqual(worktreeObject.content, object.content);
+		const ref = await readTarget({ repoRoot: root, kind: 'ref', value: 'refs/tags/v1' });
+		assert.strictEqual(ref.content, hash);
+		await vscode.commands.executeCommand('gistory.show', { repoRoot: root, kind: 'object', value: hash });
+		await vscode.commands.executeCommand('gistory.show', { repoRoot: root, kind: 'ref', value: 'refs/tags/v1' });
+	});
+	test('viewer links keep object IDs and refs escaped', () => {
+		const hash = 'a'.repeat(40);
+		const html = linkedContent(`ref: refs/heads/main\ntree ${hash}\n<script>`);
+		assert.ok(html.includes('data-command="OPEN_REF"'));
+		assert.ok(html.includes('data-command="OPEN_OBJECT_BY_HASH"'));
+		assert.ok(html.includes('&lt;script&gt;'));
+	});
+	test('webview click posts link destination', () => {
+		let handler: ((event: { preventDefault(): void }) => void) | undefined;
+		let posted: unknown;
+		const link = { dataset: { command: 'OPEN_REF', value: 'refs/heads/main' }, addEventListener: (_type: string, callback: typeof handler) => { handler = callback; } };
+		const script = viewerHTML(linkedContent('ref: refs/heads/main')).match(/<script nonce="[^"]+">([\s\S]*?)<\/script>/);
+		assert.ok(script);
+		vm.runInNewContext(script![1], {
+			acquireVsCodeApi: () => ({ postMessage: (message: unknown) => { posted = message; } }),
+			document: { querySelectorAll: () => [link] }
+		});
+		assert.ok(handler);
+		handler!({ preventDefault: () => undefined });
+		assert.strictEqual(JSON.stringify(posted), JSON.stringify({ command: 'OPEN_REF', text: 'refs/heads/main' }));
+	});
+	test('multiple workspace repositories appear as separate roots', () => {
+		const folders: vscode.WorkspaceFolder[] = [
+			{ uri: vscode.Uri.file(root), name: 'main', index: 0 },
+			{ uri: vscode.Uri.file(worktree), name: 'worktree', index: 1 }
+		];
+		const roots = workspaceGitRoots(folders);
+		assert.deepStrictEqual(roots.map(item => item.label), ['main', 'worktree']);
+		assert.strictEqual(roots[1].key, admin);
 	});
 });

@@ -1,4 +1,5 @@
 import * as path from 'path';
+import * as fs from 'fs';
 
 import { runTests } from 'vscode-test';
 
@@ -13,7 +14,9 @@ async function main() {
 		const extensionTestsPath = path.resolve(__dirname, './suite/index');
 
 		// Download VS Code, unzip it and run the integration test
-		await runTests({ extensionDevelopmentPath, extensionTestsPath });
+		const installed = '/Applications/Visual Studio Code.app/Contents/MacOS/Electron';
+		const vscodeExecutablePath = process.env.VSCODE_EXECUTABLE_PATH || (fs.existsSync(installed) ? installed : undefined);
+		await runTests({ extensionDevelopmentPath, extensionTestsPath, vscodeExecutablePath });
 	} catch (err) {
 		console.error('Failed to run tests');
 		process.exit(1);
