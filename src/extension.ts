@@ -39,7 +39,13 @@ function getDescription(type: string): string {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-	context.subscriptions.push(vscode.commands.registerCommand(OPEN_COMMAND_ID, async (filePath: string) => {
+	context.subscriptions.push(vscode.commands.registerCommand(OPEN_COMMAND_ID, async (inputPath?: string) => {
+		if (inputPath === undefined) {
+			await vscode.commands.executeCommand('gistory.objectViewer.focus');
+			return;
+		}
+		if (typeof inputPath !== 'string' || !inputPath) { return; }
+		const filePath = inputPath;
 		const repoRoot = git.getRootPath(filePath);
 		if (!repoRoot) { vscode.window.showErrorMessage('Git 저장소 경로를 찾을 수 없습니다.'); return; }
 		const panel = vscode.window.createWebviewPanel(OPEN_OBJECT_VIEWER_ID, path.basename(filePath), vscode.ViewColumn.Active, {
@@ -49,12 +55,12 @@ export function activate(context: vscode.ExtensionContext): void {
 			if (typeof message?.command !== 'string' || typeof message?.text !== 'string') return;
 			if (message.command === 'OPEN_OBJECT_BY_HASH') {
 				if (!/^[0-9a-f]{40}$/i.test(message.text)) return;
-				const objectPath = path.join(git.getGitDir(filePath) || path.join(repoRoot, '.git'), 'objects', message.text.slice(0, 2), message.text.slice(2));
+				const objectPath = path.join(git.getCommonDir(filePath) || path.join(repoRoot, '.git'), 'objects', message.text.slice(0, 2), message.text.slice(2));
 				await vscode.commands.executeCommand(OPEN_COMMAND_ID, objectPath);
 			} else if (message.command === 'OPEN_REF') {
 				const ref = message.text;
 				if (!/^(refs\/(heads|tags|remotes)\/)[a-zA-Z0-9._/-]+$/.test(ref) || ref.split('/').includes('..')) return;
-				const gitDir = git.getGitDir(filePath);
+				const gitDir = git.getCommonDir(filePath);
 				if (gitDir) await vscode.commands.executeCommand(OPEN_COMMAND_ID, path.join(gitDir, ...ref.split('/')));
 			} else if (message.command === 'OPEN_PATH') {
 				if (path.resolve(message.text) !== path.resolve(filePath)) return;

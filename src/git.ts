@@ -18,6 +18,13 @@ function findGitDir(inputPath: string): { root: string; gitDir: string } | undef
 		current = path.dirname(current);
 	}
 	while (true) {
+		// A linked worktree's administrative directory points back to its .git file.
+		try {
+			const backlink = fs.readFileSync(path.join(current, 'gitdir'), 'utf8').trim();
+			if (fs.existsSync(path.join(current, 'commondir')) && path.basename(backlink) === '.git') {
+				return { root: path.dirname(path.resolve(current, backlink)), gitDir: current };
+			}
+		} catch (_error) { /* Not a linked worktree administrative directory. */ }
 		const gitMarker = path.join(current, '.git');
 		try {
 			const stat = fs.statSync(gitMarker);
@@ -41,6 +48,13 @@ export const git = {
 	getGitDir(fullPath: string): string | null {
 		const repo = findGitDir(fullPath);
 		return repo?.gitDir ?? null;
+	},
+	getCommonDir(fullPath: string): string | null {
+		const repo = findGitDir(fullPath);
+		if (!repo) return null;
+		try {
+			return path.resolve(repo.gitDir, fs.readFileSync(path.join(repo.gitDir, 'commondir'), 'utf8').trim());
+		} catch (_error) { return repo.gitDir; }
 	},
 	getPathFromRepo(fullPath: string): string | null {
 		const repo = findGitDir(fullPath);
