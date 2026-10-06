@@ -1,9 +1,8 @@
-# Change Log
+# 변경 이력
 
-All notable changes to the "gistory" extension will be documented in this file.
+## 0.0.6
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+- Git 내부 파일을 폴더 없이 한 목록에 표시하고, 최근 내용 변경 순서로 정렬합니다.
+- 여러 저장소와 worktree를 지원하며 같은 파일이 중복 표시되지 않도록 했습니다.
+- 객체 ID와 참조를 Git으로 조회해 압축된 객체와 packed refs를 열 수 있습니다.
+- 웹뷰 입력 검증과 오류 처리를 보강했습니다.
