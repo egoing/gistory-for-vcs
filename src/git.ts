@@ -41,6 +41,25 @@ function findGitDir(inputPath: string): { root: string; gitDir: string } | undef
 	}
 }
 
+function getTypeInGitDir(gitDir: string, fullPath: string): string {
+	const relative = path.relative(gitDir, path.resolve(fullPath)).split(path.sep).join('/');
+	if (relative === 'HEAD') {return 'HEAD';}
+	if (relative === 'index') {return 'INDEX';}
+	if (relative === 'config') {return 'CONFIG';}
+	if (relative === 'COMMIT_EDITMSG') {return 'COMMIT_EDITMSG';}
+	if (['MERGE_HEAD', 'MERGE_MODE', 'MERGE_MSG', 'ORIG_HEAD', 'REBASE_HEAD'].includes(relative)) {return relative;}
+	if (/^hooks\/.+/.test(relative)) {return 'HOOK';}
+	if (relative === 'info/exclude') {return 'EXCLUDE';}
+	if (/^refs\/heads\/.+/.test(relative)) {return 'BRANCH';}
+	if (/^refs\/tags\/.+/.test(relative)) {return 'TAG';}
+	if (relative === 'logs/HEAD') {return 'LOG_REFS_HEADS';}
+	if (/^logs\/refs\/heads\/.+/.test(relative)) {return 'LOG_REFS_BRANCH_HEADS';}
+	const objectMatch = relative.match(/^objects\/([0-9a-f]{2})\/([0-9a-f]{38})$/i);
+	if (objectMatch) {return 'OBJECT';}
+	if (/^objects\/pack\/.+/.test(relative)) {return 'PACK_FILE';}
+	return 'UNKNOWN';
+}
+
 export const git = {
 	getRootPath(fullPath: string): string | null {
 		const repo = findGitDir(fullPath);
@@ -63,24 +82,9 @@ export const git = {
 		const relative = path.relative(repo.gitDir, path.resolve(fullPath));
 		return relative === '' ? '.' : relative;
 	},
+	getTypeInGitDir,
 	getType(fullPath: string): string {
 		const repo = findGitDir(fullPath);
-		if (!repo) {return 'UNKNOWN';}
-		const relative = path.relative(repo.gitDir, path.resolve(fullPath)).split(path.sep).join('/');
-		if (relative === 'HEAD') {return 'HEAD';}
-		if (relative === 'index') {return 'INDEX';}
-		if (relative === 'config') {return 'CONFIG';}
-		if (relative === 'COMMIT_EDITMSG') {return 'COMMIT_EDITMSG';}
-		if (['MERGE_HEAD', 'MERGE_MODE', 'MERGE_MSG', 'ORIG_HEAD', 'REBASE_HEAD'].includes(relative)) {return relative;}
-		if (/^hooks\/.+/.test(relative)) {return 'HOOK';}
-		if (relative === 'info/exclude') {return 'EXCLUDE';}
-		if (/^refs\/heads\/.+/.test(relative)) {return 'BRANCH';}
-		if (/^refs\/tags\/.+/.test(relative)) {return 'TAG';}
-		if (relative === 'logs/HEAD') {return 'LOG_REFS_HEADS';}
-		if (/^logs\/refs\/heads\/.+/.test(relative)) {return 'LOG_REFS_BRANCH_HEADS';}
-		const objectMatch = relative.match(/^objects\/([0-9a-f]{2})\/([0-9a-f]{38})$/i);
-		if (objectMatch) {return 'OBJECT';}
-		if (/^objects\/pack\/.+/.test(relative)) {return 'PACK_FILE';}
-		return 'UNKNOWN';
+		return repo ? getTypeInGitDir(repo.gitDir, fullPath) : 'UNKNOWN';
 	}
 };

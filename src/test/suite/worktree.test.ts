@@ -7,7 +7,7 @@ import * as vm from 'vm';
 import * as vscode from 'vscode';
 import { git } from '../../git';
 import { linkedContent, readTarget, viewerHTML } from '../../extension';
-import { workspaceGitRoots } from '../../objectView';
+import { collectRecentFiles } from '../../objectView';
 
 suite('Worktree regression', () => {
 	let directory: string;
@@ -75,13 +75,19 @@ suite('Worktree regression', () => {
 		handler!({ preventDefault: () => undefined });
 		assert.strictEqual(JSON.stringify(posted), JSON.stringify({ command: 'OPEN_REF', text: 'refs/heads/main' }));
 	});
-	test('multiple workspace repositories appear as separate roots', () => {
+	test('recent Git files are flat and newest first across repositories', async () => {
 		const folders: vscode.WorkspaceFolder[] = [
 			{ uri: vscode.Uri.file(root), name: 'main', index: 0 },
 			{ uri: vscode.Uri.file(worktree), name: 'worktree', index: 1 }
 		];
-		const roots = workspaceGitRoots(folders);
-		assert.deepStrictEqual(roots.map(item => item.label), ['main', 'worktree']);
-		assert.strictEqual(roots[1].key, admin);
+		const later = new Date(Date.now() + 60_000);
+		const latest = new Date(Date.now() + 120_000);
+		fs.utimesSync(path.join(root, '.git', 'HEAD'), later, later);
+		fs.utimesSync(path.join(admin, 'HEAD'), latest, latest);
+		const files = await collectRecentFiles(folders);
+		assert.strictEqual(files[0].label, 'worktree: HEAD');
+		assert.strictEqual(files[1].label, 'main: HEAD');
+		assert.ok(files.every(file => fs.statSync(file.key).isFile()));
+		assert.ok(files.every((file, index) => index === 0 || files[index - 1].modifiedAt >= file.modifiedAt));
 	});
 });

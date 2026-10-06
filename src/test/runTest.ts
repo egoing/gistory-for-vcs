@@ -13,9 +13,11 @@ async function main() {
 		// Passed to --extensionTestsPath
 		const extensionTestsPath = path.resolve(__dirname, './suite/index');
 
-		// Download VS Code, unzip it and run the integration test
-		const installed = '/Applications/Visual Studio Code.app/Contents/MacOS/Electron';
-		const vscodeExecutablePath = process.env.VSCODE_EXECUTABLE_PATH || (fs.existsSync(installed) ? installed : undefined);
+		const installed = [
+			'/Applications/Visual Studio Code.app/Contents/MacOS/Code',
+			'/Applications/Visual Studio Code.app/Contents/MacOS/Electron'
+		].find(candidate => fs.existsSync(candidate));
+		const vscodeExecutablePath = process.env.VSCODE_EXECUTABLE_PATH || installed;
 		await runTests({ extensionDevelopmentPath, extensionTestsPath, vscodeExecutablePath });
 	} catch (err) {
 		console.error('Failed to run tests');
